@@ -123,3 +123,27 @@ class SortedTableMap(MapBase):
         while j < len(self._table) and (stop is None or self._table[j]._key < stop):
             yield (self._table[j]._key, self._table[j]._value)
             j += 1
+
+    def containKey(self, k):
+        j = self._find_index(k, 0, len(self._table) - 1)
+        return j < len(self._table) and self._table[j]._key == k
+
+
+# Main method to test the solution
+def main():
+    m = SortedTableMap()
+    m["a"] = 1
+    m["b"] = 2
+    m["c"] = 3
+
+    print("Contain 'a':", m.containKey("a"))  # Expected: True
+    print("Contain 'b':", m.containKey("b"))  # Expected: True
+    print("Contain 'c':", m.containKey("c"))  # Expected: True
+    print("Contain 'd':", m.containKey("d"))  # Expected: False
+
+    del m["b"]
+    print("Contain 'b' after deletion:", m.containKey("b"))  # Expected: False
+
+
+if __name__ == "__main__":
+    main()
