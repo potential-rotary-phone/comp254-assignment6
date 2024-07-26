@@ -1,75 +1,102 @@
-# Copyright 2013, Michael H. Goldwasser
-#
-# Developed for use with the book:
-#
-#    Data Structures and Algorithms in Python
-#    Michael T. Goodrich, Roberto Tamassia, and Michael H. Goldwasser
-#    John Wiley & Sons, 2013
-#
-# This program is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
-#
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+from random import randrange
+from collections.abc import MutableMapping
 
-from hash_map_base import HashMapBase
+
+class MapBase(MutableMapping):
+    class _Item:
+        __slots__ = "_key", "_value"
+
+        def __init__(self, k, v):
+            self._key = k
+            self._value = v
+
+        def __eq__(self, other):
+            return self._key == other._key
+
+        def __ne__(self, other):
+            return not (self == other)
+
+        def __lt__(self, other):
+            return self._key < other._key
+
+
+class HashMapBase(MapBase):
+    def __init__(self, cap=11, p=109345121, max_load=0.5):
+        self._table = cap * [None]
+        self._n = 0
+        self._prime = p
+        self._scale = 1 + randrange(p - 1)
+        self._shift = randrange(p)
+        self._max_load = max_load
+
+    def _hash_function(self, k):
+        return (hash(k) * self._scale + self._shift) % self._prime % len(self._table)
+
+    def __len__(self):
+        return self._n
+
+    def __getitem__(self, k):
+        j = self._hash_function(k)
+        return self._bucket_getitem(j, k)
+
+    def __setitem__(self, k, v):
+        j = self._hash_function(k)
+        self._bucket_setitem(j, k, v)
+        if self._n > len(self._table) * self._max_load:
+            self._resize(2 * len(self._table) - 1)
+
+    def __delitem__(self, k):
+        j = self._hash_function(k)
+        self._bucket_delitem(j, k)
+        self._n -= 1
+
+    def _resize(self, c):
+        old = list(self.items())
+        self._table = c * [None]
+        self._n = 0
+        for k, v in old:
+            self[k] = v
 
 
 class ProbeHashMap(HashMapBase):
-    """Hash map implemented with linear probing for collision resolution."""
-
-    _AVAIL = object()  # sentinal marks locations of previous deletions
+    _AVAIL = object()
 
     def _is_available(self, j):
-        """Return True if index j is available in table."""
         return self._table[j] is None or self._table[j] is ProbeHashMap._AVAIL
 
     def _find_slot(self, j, k):
-        """Search for key k in bucket at index j.
-
-        Return (success, index) tuple, described as follows:
-        If match was found, success is True and index denotes its location.
-        If no match found, success is False and index denotes first available slot.
-        """
         firstAvail = None
         while True:
             if self._is_available(j):
                 if firstAvail is None:
-                    firstAvail = j  # mark this as first avail
+                    firstAvail = j
                 if self._table[j] is None:
-                    return (False, firstAvail)  # search has failed
+                    return (False, firstAvail)
             elif k == self._table[j]._key:
-                return (True, j)  # found a match
-            j = (j + 1) % len(self._table)  # keep looking (cyclically)
+                return (True, j)
+            j = (j + 1) % len(self._table)
 
     def _bucket_getitem(self, j, k):
         found, s = self._find_slot(j, k)
         if not found:
-            raise KeyError("Key Error: " + repr(k))  # no match found
+            raise KeyError("Key Error: " + repr(k))
         return self._table[s]._value
 
     def _bucket_setitem(self, j, k, v):
         found, s = self._find_slot(j, k)
         if not found:
-            self._table[s] = self._Item(k, v)  # insert new item
-            self._n += 1  # size has increased
+            self._table[s] = self._Item(k, v)
+            self._n += 1
         else:
-            self._table[s]._value = v  # overwrite existing
+            self._table[s]._value = v
 
     def _bucket_delitem(self, j, k):
         found, s = self._find_slot(j, k)
         if not found:
-            raise KeyError("Key Error: " + repr(k))  # no match found
-        self._table[s] = ProbeHashMap._AVAIL  # mark as vacated
+            raise KeyError("Key Error: " + repr(k))
+        self._table[s] = ProbeHashMap._AVAIL
 
     def __iter__(self):
-        for j in range(len(self._table)):  # scan entire table
+        for j in range(len(self._table)):
             if not self._is_available(j):
                 yield self._table[j]._key
