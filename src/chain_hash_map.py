@@ -149,7 +149,7 @@ def test_efficiency(max_load_factors, num_items):
 
 
 def main():
-    max_load_factors = [round(i * 0.1, 1) + 0.1 for i in range(10)]
+    max_load_factors = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
     num_items = 1000
     results = test_efficiency(max_load_factors, num_items)
 

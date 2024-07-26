@@ -1,6 +1,6 @@
-import time
-from collections.abc import MutableMapping
 from random import randrange
+from collections.abc import MutableMapping
+import time
 
 
 class MapBase(MutableMapping):
@@ -60,7 +60,6 @@ class HashMapBase(MapBase):
 
 
 class ProbeHashMap(HashMapBase):
-
     _AVAIL = object()
 
     def _is_available(self, j):
@@ -137,7 +136,7 @@ def test_efficiency(max_load_factors, num_items):
 
 
 def main():
-    max_load_factors = [0.25, 0.5, 0.75]
+    max_load_factors = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
     num_items = 1000
     results = test_efficiency(max_load_factors, num_items)
 
