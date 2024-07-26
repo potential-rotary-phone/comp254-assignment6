@@ -1,0 +1,14 @@
+{
+    "git.autofetch": true,
+    "gitdoc.enabled": true,
+    "gitdoc.autoCommitDelay": 60000,
+    "gitdoc.autoPushDelay": 0,
+    "gitdoc.commitMessageFormat": "ccc, LLL d, y, h:mm a '+00:00'",
+    "flake8.args": [
+        "--ignore=E501,E111,E114,E226"
+    ],
+    "pylint.args": [
+        "--disable=E0202,C0114,R1705"
+    ],
+    "files.insertFinalNewline": true
+}
