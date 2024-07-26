@@ -1,6 +1,23 @@
-from map_base import MapBase
+from collections.abc import MutableMapping
 from random import randrange
-from map_base import MapBase
+
+
+class MapBase(MutableMapping):
+    class _Item:
+        __slots__ = "_key", "_value"
+
+        def __init__(self, k, v):
+            self._key = k
+            self._value = v
+
+        def __eq__(self, other):
+            return self._key == other._key
+
+        def __ne__(self, other):
+            return not (self == other)
+
+        def __lt__(self, other):
+            return self._key < other._key
 
 
 class HashMapBase(MapBase):
@@ -70,31 +87,3 @@ class UnsortedTableMap(MapBase):
     def __iter__(self):
         for item in self._table:
             yield item._key
-
-
-class ChainHashMap(HashMapBase):
-    def _bucket_getitem(self, j, k):
-        bucket = self._table[j]
-        if bucket is None:
-            raise KeyError("Key Error: " + repr(k))
-        return bucket[k]
-
-    def _bucket_setitem(self, j, k, v):
-        if self._table[j] is None:
-            self._table[j] = UnsortedTableMap()
-        oldsize = len(self._table[j])
-        self._table[j][k] = v
-        if len(self._table[j]) > oldsize:
-            self._n += 1
-
-    def _bucket_delitem(self, j, k):
-        bucket = self._table[j]
-        if bucket is None:
-            raise KeyError("Key Error: " + repr(k))
-        del bucket[k]
-
-    def __iter__(self):
-        for bucket in self._table:
-            if bucket is not None:
-                for key in bucket:
-                    yield key
