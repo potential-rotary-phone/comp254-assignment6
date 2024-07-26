@@ -1,63 +1,100 @@
-# Copyright 2013, Michael H. Goldwasser
-#
-# Developed for use with the book:
-#
-#    Data Structures and Algorithms in Python
-#    Michael T. Goodrich, Roberto Tamassia, and Michael H. Goldwasser
-#    John Wiley & Sons, 2013
-#
-# This program is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
-#
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
+from map_base import MapBase
+from random import randrange
 from map_base import MapBase
 
 
-class UnsortedTableMap(MapBase):
-    """Map implementation using an unordered list."""
+class HashMapBase(MapBase):
+    def __init__(self, cap=11, p=109345121):
+        self._table = cap * [None]
+        self._n = 0
+        self._prime = p
+        self._scale = 1 + randrange(p - 1)
+        self._shift = randrange(p)
 
-    def __init__(self):
-        """Create an empty map."""
-        self._table = []  # list of _Item's
+    def _hash_function(self, k):
+        return (hash(k) * self._scale + self._shift) % self._prime % len(self._table)
+
+    def __len__(self):
+        return self._n
 
     def __getitem__(self, k):
-        """Return value associated with key k (raise KeyError if not found)."""
+        j = self._hash_function(k)
+        return self._bucket_getitem(j, k)
+
+    def __setitem__(self, k, v):
+        j = self._hash_function(k)
+        self._bucket_setitem(j, k, v)
+        if self._n > len(self._table) // 2:
+            self._resize(2 * len(self._table) - 1)
+
+    def __delitem__(self, k):
+        j = self._hash_function(k)
+        self._bucket_delitem(j, k)
+        self._n -= 1
+
+    def _resize(self, c):
+        old = list(self.items())
+        self._table = c * [None]
+        self._n = 0
+        for k, v in old:
+            self[k] = v
+
+
+class UnsortedTableMap(MapBase):
+    def __init__(self):
+        self._table = []
+
+    def __getitem__(self, k):
         for item in self._table:
             if k == item._key:
                 return item._value
         raise KeyError("Key Error: " + repr(k))
 
     def __setitem__(self, k, v):
-        """Assign value v to key k, overwriting existing value if present."""
         for item in self._table:
-            if k == item._key:  # Found a match:
-                item._value = v  # reassign value
-                return  # and quit
-        # did not find match for key
+            if k == item._key:
+                item._value = v
+                return
         self._table.append(self._Item(k, v))
 
     def __delitem__(self, k):
-        """Remove item associated with key k (raise KeyError if not found)."""
         for j in range(len(self._table)):
-            if k == self._table[j]._key:  # Found a match:
-                self._table.pop(j)  # remove item
-                return  # and quit
+            if k == self._table[j]._key:
+                self._table.pop(j)
+                return
         raise KeyError("Key Error: " + repr(k))
 
     def __len__(self):
-        """Return number of items in the map."""
         return len(self._table)
 
     def __iter__(self):
-        """Generate iteration of the map's keys."""
         for item in self._table:
-            yield item._key  # yield the KEY
+            yield item._key
+
+
+class ChainHashMap(HashMapBase):
+    def _bucket_getitem(self, j, k):
+        bucket = self._table[j]
+        if bucket is None:
+            raise KeyError("Key Error: " + repr(k))
+        return bucket[k]
+
+    def _bucket_setitem(self, j, k, v):
+        if self._table[j] is None:
+            self._table[j] = UnsortedTableMap()
+        oldsize = len(self._table[j])
+        self._table[j][k] = v
+        if len(self._table[j]) > oldsize:
+            self._n += 1
+
+    def _bucket_delitem(self, j, k):
+        bucket = self._table[j]
+        if bucket is None:
+            raise KeyError("Key Error: " + repr(k))
+        del bucket[k]
+
+    def __iter__(self):
+        for bucket in self._table:
+            if bucket is not None:
+                for key in bucket:
+                    yield key
