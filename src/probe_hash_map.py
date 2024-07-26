@@ -21,13 +21,12 @@ class MapBase(MutableMapping):
 
 
 class HashMapBase(MapBase):
-    def __init__(self, cap=11, p=109345121, max_load=0.5):
+    def __init__(self, cap=11, p=109345121):
         self._table = cap * [None]
         self._n = 0
         self._prime = p
         self._scale = 1 + randrange(p - 1)
         self._shift = randrange(p)
-        self._max_load = max_load
 
     def _hash_function(self, k):
         return (hash(k) * self._scale + self._shift) % self._prime % len(self._table)
@@ -42,7 +41,7 @@ class HashMapBase(MapBase):
     def __setitem__(self, k, v):
         j = self._hash_function(k)
         self._bucket_setitem(j, k, v)
-        if self._n > len(self._table) * self._max_load:
+        if self._n > len(self._table) // 2:
             self._resize(2 * len(self._table) - 1)
 
     def __delitem__(self, k):
@@ -59,6 +58,7 @@ class HashMapBase(MapBase):
 
 
 class ProbeHashMap(HashMapBase):
+
     _AVAIL = object()
 
     def _is_available(self, j):
