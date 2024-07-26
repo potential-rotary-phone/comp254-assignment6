@@ -20,6 +20,18 @@ class MapBase(MutableMapping):
 
 
 class UnsortedTableMap(MapBase):
+    def _find_index(self, k, low, high):
+        if high < low:
+            return high + 1
+        else:
+            mid = (low + high) // 2
+            if k == self._table[mid]._key:
+                return mid
+            elif k < self._table[mid]._key:
+                return self._find_index(k, low, mid - 1)
+            else:
+                return self._find_index(k, mid + 1, high)
+
     def __init__(self):
         self._table = []
 
