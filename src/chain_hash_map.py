@@ -1,5 +1,6 @@
-from random import randrange
+import time
 from collections.abc import MutableMapping
+from random import randint, randrange
 
 
 class MapBase(MutableMapping):
@@ -21,12 +22,13 @@ class MapBase(MutableMapping):
 
 
 class HashMapBase(MapBase):
-    def __init__(self, cap=11, p=109345121):
+    def __init__(self, cap=11, p=109345121, max_load=0.5):
         self._table = cap * [None]
         self._n = 0
         self._prime = p
         self._scale = 1 + randrange(p - 1)
         self._shift = randrange(p)
+        self._max_load = max_load
 
     def _hash_function(self, k):
         return (hash(k) * self._scale + self._shift) % self._prime % len(self._table)
@@ -41,7 +43,7 @@ class HashMapBase(MapBase):
     def __setitem__(self, k, v):
         j = self._hash_function(k)
         self._bucket_setitem(j, k, v)
-        if self._n > len(self._table) // 2:
+        if self._n > len(self._table) * self._max_load:
             self._resize(2 * len(self._table) - 1)
 
     def __delitem__(self, k):
@@ -115,3 +117,47 @@ class ChainHashMap(HashMapBase):
             if bucket is not None:
                 for key in bucket:
                     yield key
+
+
+def test_efficiency(max_load_factors, num_items):
+    results = {}
+    for max_load in max_load_factors:
+        hashmap = ChainHashMap(max_load=max_load)
+        start_time = time.time()
+
+        # Insert random key-value pairs
+        for _ in range(num_items):
+            key = randint(0, 10 * num_items)
+            value = randint(0, 10 * num_items)
+            hashmap[key] = value
+
+        # Measure insertion time
+        insert_time = time.time() - start_time
+
+        # Measure retrieval time
+        start_time = time.time()
+        for _ in range(num_items):
+            key = randint(0, 10 * num_items)
+            try:
+                _ = hashmap[key]
+            except KeyError:
+                pass
+        retrieval_time = time.time() - start_time
+
+        results[max_load] = (insert_time, retrieval_time)
+    return results
+
+
+def main():
+    max_load_factors = [round(i * 0.1, 1) + 0.1 for i in range(10)]
+    num_items = 1000
+    results = test_efficiency(max_load_factors, num_items)
+
+    print("Load Factor | Insert Time (s) | Retrieval Time (s)")
+    print("-----------------------------------------------")
+    for max_load, (insert_time, retrieval_time) in results.items():
+        print(f"{max_load:.2f}       | {insert_time:.6f}      | {retrieval_time:.6f}")
+
+
+if __name__ == "__main__":
+    main()
