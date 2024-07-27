@@ -19,22 +19,27 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import sys
+from collections.abc import MutableMapping
 
-filename = sys.argv[1]
 
-freq = {}
-for piece in open(filename).read().lower().split():
-    # only consider alphabetic characters within this piece
-    word = "".join(c for c in piece if c.isalpha())
-    if word:  # require at least one alphabetic character
-        freq[word] = 1 + freq.get(word, 0)
+class MapBase(MutableMapping):
+    """Our own abstract base class that includes a nonpublic _Item class."""
 
-max_word = ""
-max_count = 0
-for w, c in freq.items():  # (key, value) tuples represent (word, count)
-    if c > max_count:
-        max_word = w
-        max_count = c
-print("The most frequent word is", max_word)
-print("Its number of occurrences is", max_count)
+    # ------------------------------- nested _Item class -------------------------------
+    class _Item:
+        """Lightweight composite to store key-value pairs as map items."""
+
+        __slots__ = "_key", "_value"
+
+        def __init__(self, k, v):
+            self._key = k
+            self._value = v
+
+        def __eq__(self, other):
+            return self._key == other._key  # compare items based on their keys
+
+        def __ne__(self, other):
+            return not (self == other)  # opposite of __eq__
+
+        def __lt__(self, other):
+            return self._key < other._key  # compare items based on their keys
